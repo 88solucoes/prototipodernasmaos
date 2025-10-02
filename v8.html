@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Poder nas Mãos - Academia</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+/* Fontes e Estilos Base */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Teko:wght@300..700&display=swap');
+
+body { font-family: 'Inter', sans-serif; margin:0; overflow:hidden; background-color: #0d47a1; }
+.full-screen { width:100vw; height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; background-size:cover; background-position:center; transition:opacity 0.5s ease-in-out; position:absolute; top:0; left:0; }
+.game-background { background-image:url('./imagens/capa.jpg'); background-repeat:no-repeat; background-size: cover; background-position: center; } 
+.selection-background { 
+    background-color: rgba(0, 0, 0, 0.7); 
+} 
+
+.loading-content { display:flex; flex-direction:column; align-items:center; justify-content:center; padding:2rem; background-color:rgba(0,0,0,0.7); border-radius:12px; box-shadow:0 4px 10px rgba(0,0,0,0.5); max-width:90%; text-align:center; }
+.progress-bar { width:300px; height:15px; background-color:#374151; border-radius:9999px; margin-top:1rem; overflow:hidden; }
+.progress-fill { height:100%; background-color:#10b981; transition:width 3s ease-out; border-radius:9999px; }
+.helice-card { background-color: rgba(255,255,255,0.9); border:3px solid transparent; cursor:pointer; transition: all 0.3s ease; height:100%; }
+.helice-card:hover { transform: translateY(-5px); box-shadow: 0 10px 15px rgba(0,0,0,0.2); }
+
+/* Estilos Específicos da Tela de Jogo */
+.indicator-bar-fill { height:100%; transition: width 0.5s ease-out; border-radius:9999px; }
+.indicator-base-container { background-color: white; padding: 5px 15px; border-radius: 10px; color: #1f2937; }
+.indicator-base-bg { background-color: #546E7A; border-radius:9999px; height: 10px; width: 100px; }
+
+.objectives-panel { 
+    background-color: #2c5861; 
+    border: 3px solid #63a4b0;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+}
+.map-container {
+    background-image: url('./imagens/mar.gif'); 
+    background-size: cover; /* Garante que o GIF cubra toda a área do container, ajustando-se */
+    background-position: center; /* Centraliza o GIF */
+    background-repeat: no-repeat; /* Impede a repetição do GIF */ 
+    border-radius: 15px;
+    padding: 20px;
+    position: relative;
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.6);
+}
+
+#timer-bar {
+    width: 100%;
+    height: 5px;
+    background-color: #fca5a5; 
+    border-radius: 9999px;
+    margin-bottom: 1rem;
+}
+#timer-fill {
+    height: 100%;
+    background-color: #ef4444; 
+    transition: width 10s linear; 
+    border-radius: 9999px;
+    width: 100%; 
+}
+/* Estilo para o contêiner do celular na nova posição */
+.phone-and-objectives {
+    display: flex;
+    flex-direction: column;
+    gap: 20px; /* Espaçamento entre o painel de objetivos e o celular */
+    align-items: center; /* Centraliza o celular e o painel horizontalmente */
+    width: 1/4; /* Ocupa a mesma largura da coluna de objetivos */
+    align-self: flex-start; /* Alinha no topo */
+}
+</style>
+</head>
+<body class="font-sans text-white">
+<div id="app-container"></div>
+
+<script>
+// -------------------- VARIÁVEIS DE CONFIGURAÇÃO GLOBAL --------------------
+const LOGO_ALTURA = 'h-24'; 
+const MAPA_LARGURA = 'w-[850px]'; 
+const MAPA_ALTURA = 'h-[650px]';  
+const PERSONAGEM_ALTURA = 'h-56'; 
+const CELULAR_ALTURA = 'h-[500px]'; 
+const CELULAR_LARGURA = 'w-[280px]'; 
+
+const DECISION_TIMER_INTERVAL = 20000; 
+
+// -------------------- DADOS DO JOGO --------------------
+const heliceDetails = {
+Academia: {
+    escada: 'Estudante → Professora → Pesquisador',
+    personagem_inicial: 'Estudante',
+    projeto_lei: {
+        titulo: 'Lei de Suporte Escolar a Estudantes com Condições Crônicas',
+        descricao: 'Dispõe sobre o acompanhamento integral para educandos com dislexia, TDAH ou outro transtorno de aprendizagem.',
+        referencia: 'Lei Nº 14.254/21',
+    },
+    habilidade: {
+        nome: 'Flash Mob',
+        efeito: '+30 Popularidade imediata',
+        cooldown: '5 min',
+        titulo_ganho: 'Jovem Senador',
+    }
+},
+Governo: {
+    escada: 'Analista Legislativo → Auditor Fiscal → Senadora',
+    personagem_inicial: 'Analista Legislativo',
+    projeto_lei: {
+        titulo: 'Reforma para Atualização do Regimento Interno',
+        descricao: 'Moderniza regras de tramitação legislativa e amplia a participação digital.',
+        referencia: 'Regimento Interno do Senado + e-Cidadania',
+    },
+    habilidade: {
+        nome: 'Parecer Técnico',
+        efeito: '+30 Ética imediata',
+        cooldown: '5 min',
+        titulo_ganho: 'Mestre do Regimento',
+    }
+},
+Mercado: {
+    escada: 'Influencer → Empresário Local → CEO de Startup',
+    personagem_inicial: 'Influencer',
+    projeto_lei: {
+        titulo: 'Lei de Proteção de Crianças e Adolescentes em Plataformas Digitais',
+        descricao: 'Dispõe sobre restrição de publicidade infantil e exposição de dados.',
+        referencia: 'PL 2628/2022',
+    },
+    habilidade: {
+        nome: 'Viralizar Conteúdo',
+        efeito: '+30 Popularidade imediata',
+        cooldown: '5 min',
+        titulo_ganho: 'Voz Digital do Povo',
+    }
+}
+};
+
+const decisions = [
+{ text:"Colegas sugerem fazer um protesto sem autorização.", options:[{label:"Participar", effect:{popularidade:+10, etica:-10}},{label:"Organizar legalmente", effect:{etica:+10, popularidade:-10}}]},
+{ text:"Um influencer digital oferece divulgar a causa em troca de pagamento muito alto.", options:[{label:"Aceitar", effect:{popularidade:+10, etica:-10}},{label:"Recusar", effect:{fundos:+10000, etica:-10}}]},
+{ text:"Centro Acadêmico quer usar o fundo estudantil da formatura para financiar panfletos.", options:[{label:"Aceitar", effect:{fundos:+10000, etica:-10}},{label:"Recusar", effect:{popularidade:+10, fundos:-10000}}]},
+{ text:"Um grupo de alunos propõe 'viralizar' com um meme preconceituoso.", options:[{label:"Aprovar", effect:{popularidade:+10, etica:-10}},{label:"Recusar", effect:{etica:+10, popularidade:-10}}]},
+{ text:"Jornal universitário pede entrevista exclusiva sobre o projeto em troca de apoio financeiro.", options:[{label:"Dar entrevista", effect:{fundos:+10000, etica:-10}},{label:"Recusar", effect:{popularidade:+10, fundos:-10000}}]},
+{ text:"Um político local oferece patrocínio em troca de apoio nas próximas eleições.", options:[{label:"Aceitar", effect:{fundos:+10000, etica:-10}},{label:"Recusar", effect:{popularidade:+10, fundos:-10000}}]},
+{ text:"Alunos querem ocupar a reitoria e paralisar aulas para chamar atenção.", options:[{label:"Apoiar", effect:{popularidade:+10, etica:-10}},{label:"Propor assembleia formal", effect:{etica:+10, popularidade:-10}}]},
+{ text:"Um app de mobilização quer usar os dados pessoais dos estudantes em troca de apoio financeiro.", options:[{label:"Dar acesso", effect:{fundos:+10000, etica:-10}},{label:"Recusar", effect:{popularidade:+10, fundos:-10000}}]},
+{ text:"Professores pedem ajuda para incluir tema de direitos humanos com redação separatista na pauta.", options:[{label:"Aceitar", effect:{popularidade:+10, etica:-10}},{label:"Recusar", effect:{etica:+10, popularidade:-10}}]},
+{ text:"Ex-alunos desonestos oferecem financiar transporte para manifestação.", options:[{label:"Aceitar", effect:{fundos:+10000, etica:-10}},{label:"Recusar", effect:{popularidade:+10, fundos:-10000}}]},
+{ text:"Estudantes sugerem manipular assinaturas digitais para acelerar apoio.", options:[{label:"Aceitar", effect:{popularidade:+10, etica:-10}},{label:"Recusar", effect:{etica:+10, popularidade:-10}}]},
+{ text:"Rede social propõe impulsionar post pago para aumentar alcance.", options:[{label:"Aceitar", effect:{popularidade:+10, fundos:-10000}},{label:"Crescer organicamente", effect:{etica:+10, popularidade:-10}}]},
+{ text:"Um colega hacker oferece burlar o sistema do e-Cidadania para acelerar tramitação.", options:[{label:"Aceitar", effect:{popularidade:+10, etica:-10}},{label:"Esperar", effect:{etica:+10, popularidade:-10}}]},
+{ text:"Organizadores de evento estudantil polêmico pedem sua presença como porta-voz em troca de apoio financeiro.", options:[{label:"Aceitar", effect:{fundos:+10000, popularidade:-10}},{label:"Recusar", effect:{etica:+10, fundos:-10000}}]},
+{ text:"Um partido político tenta usar a causa estudantil como bandeira eleitoral.", options:[{label:"Aceitar", effect:{popularidade:+10, etica:-10}},{label:"Recusar", effect:{etica:+10, popularidade:-10}}]}
+];
+
+// -------------------- ESTADO DO JOGO --------------------
+let gameState = {
+view: 'loading',
+selectedHelice: 'Academia', 
+personagem: null,
+projetoLei: null,
+habilidade: null,
+popularidade: 25, 
+etica: 25,
+fundos: 10000, 
+currentDecision: 0,
+objectivesStatus: {
+    deslocamento: [0, 0, 0, 0, 0],
+    negociacao: [0, 0]
+},
+personagemX: 50, 
+personagemY: 50  
+};
+
+const appContainer = document.getElementById('app-container');
+let questionTimer;
+let decisionInterval; 
+let isModalOpen = false;
+
+// -------------------- FUNÇÕES DE RENDERIZAÇÃO --------------------
+function render(){ 
+    appContainer.innerHTML=''; 
+    let screen; 
+    switch(gameState.view){ 
+        case'loading': screen=renderLoadingScreen(); break; 
+        case'selection': screen=renderSelectionScreen(); break; 
+        case'game': screen=renderGameScreen(); break; 
+    } 
+    appContainer.appendChild(screen); 
+}
+
+function renderLoadingScreen(){
+    const screen=document.createElement('div'); screen.className='full-screen game-background';
+    const content=document.createElement('div'); content.className='loading-content';
+    content.innerHTML=`<h1 class="text-4xl font-bold text-white mb-4">PODER NAS MÃOS</h1>
+    <p class="text-xl text-gray-300">Carregando</p>
+    <div class="progress-bar"><div id="progress-fill" class="progress-fill" style="width:0%;"></div></div>
+    <button id="play-button" class="mt-8 px-6 py-3 bg-green-600 text-white font-semibold rounded-lg shadow-lg hover:bg-green-700 transition duration-300 transform hover:scale-105 opacity-0 pointer-events-none">Jogar</button>`;
+    screen.appendChild(content);
+    setTimeout(()=>document.getElementById('progress-fill').style.width='100%',10);
+    setTimeout(()=>{
+        const btn=document.getElementById('play-button'); 
+        btn.classList.remove('opacity-0','pointer-events-none');
+        btn.addEventListener('click',()=>{ gameState.view='selection'; render(); });
+    },3000);
+    return screen;
+}
+
+function renderSelectionScreen(){
+    const screen=document.createElement('div'); 
+    screen.className='full-screen game-background selection-background p-4'; 
+    screen.innerHTML=`<h2 class="text-4xl font-extrabold text-white mb-10">ESCOLHA SUA HÉLICE</h2>
+    <div class="flex flex-wrap justify-center gap-6 max-w-6xl w-full">
+    ${Object.keys(heliceDetails).map(key=>`<div id="helice-${key}" class="helice-card p-6 rounded-xl w-72 flex flex-col justify-between text-gray-900" data-helice="${key}">
+        <div><h2 class="text-2xl mb-4">${key.toUpperCase()}</h2>
+        <p class="text-sm font-semibold mb-2">Escada Evolutiva:</p>
+        <p class="text-base font-medium">${heliceDetails[key].escada}</p></div>
+        <button class="mt-6 px-4 py-2 bg-indigo-600 text-white text-sm font-semibold rounded-md hover:bg-indigo-700 transition duration-300">Selecionar ${key}</button>
+        </div>`).join('')}
+    </div>`;
+    screen.querySelectorAll('.helice-card').forEach(card=>{
+        card.querySelector('button').addEventListener('click',e=>{ e.stopPropagation(); selectHelice(card.dataset.helice); });
+        card.addEventListener('mouseenter',()=>card.style.borderColor='#4f46e5');
+        card.addEventListener('mouseleave',()=>card.style.borderColor='transparent');
+    });
+    return screen;
+}
+
+function selectHelice(key){
+    const details=heliceDetails[key];
+    gameState.selectedHelice=key; gameState.personagem=details.personagem_inicial;
+    gameState.projetoLei=details.projeto_lei; gameState.habilidade=details.habilidade;
+    gameState.view='game'; 
+    render();
+    
+    document.addEventListener('keydown', handleKeyPress);
+    decisionInterval = setInterval(showDecisionModal, DECISION_TIMER_INTERVAL);
+}
+
+// -------------------- LÓGICA DO JOGO E EVENTOS --------------------
+
+function applySanction(points) {
+    clearTimeout(questionTimer);
+    isModalOpen = false;
+
+    gameState.popularidade = Math.max(0, gameState.popularidade - points);
+    gameState.etica = Math.max(0, gameState.etica - points);
+    gameState.fundos = Math.max(0, gameState.fundos - (points * 1000)); 
+
+    alert(`TEMPO ESGOTADO! Sanção aplicada: -${points}% Social, -${points}% Ética e -R$${points * 1000} Fundos.`);
+    
+    gameState.currentDecision=(gameState.currentDecision+1)%decisions.length;
+    document.getElementById('questionModal').classList.add('hidden');
+    render();
+}
+
+function handleDecision(opt) {
+    clearTimeout(questionTimer); 
+    isModalOpen = false;
+    const modal=document.getElementById('questionModal');
+
+    gameState.popularidade=Math.max(0,Math.min(100,gameState.popularidade+(opt.effect.popularidade||0)));
+    gameState.etica=Math.max(0,Math.min(100,gameState.etica+(opt.effect.etica||0)));
+    gameState.fundos+=opt.effect.fundos||0; 
+
+
+    gameState.currentDecision=(gameState.currentDecision+1)%decisions.length;
+    modal.classList.add('hidden'); 
+    render();
+    
+    clearInterval(decisionInterval);
+    decisionInterval = setInterval(showDecisionModal, DECISION_TIMER_INTERVAL);
+}
+
+
+function showDecisionModal(){
+    const modal=document.getElementById('questionModal'); 
+
+    clearInterval(decisionInterval);
+
+    if (isModalOpen) return;
+    isModalOpen = true;
+
+    const q=decisions[gameState.currentDecision];
+    
+    modal.classList.remove('hidden');
+    const timerFill=document.getElementById('timer-fill');
+
+    timerFill.style.transition = 'none'; 
+    timerFill.style.width = '100%'; 
+    setTimeout(() => {
+        timerFill.style.transition = 'width 10s linear'; 
+        timerFill.style.width = '0%'; 
+    }, 10); 
+
+    questionTimer = setTimeout(() => {
+        applySanction(9); 
+    }, 10000); 
+
+    document.getElementById('questionText').textContent = q.text;
+    const optionsDiv=document.getElementById('options');
+    optionsDiv.innerHTML='';
+    q.options.forEach(opt=>{
+        const btn=document.createElement('button'); btn.textContent=opt.label;
+        btn.className='px-4 py-2 bg-indigo-600 hover:bg-indigo-700 rounded text-white font-semibold';
+        btn.addEventListener('click',()=>handleDecision(opt)); 
+        optionsDiv.appendChild(btn);
+    });
+    
+    document.getElementById('closeQuestion').onclick = () => {
+        clearTimeout(questionTimer);
+        isModalOpen = false;
+        modal.classList.add('hidden');
+        applySanction(5); 
+    };
+
+}
+
+function handleKeyPress(event) {
+    if (gameState.view !== 'game' || isModalOpen) return; 
+
+    const step = 2; 
+
+    switch (event.key) {
+        case 'ArrowUp':
+            gameState.personagemY = Math.max(0, gameState.personagemY - step);
+            break;
+        case 'ArrowDown':
+            gameState.personagemY = Math.min(100, gameState.personagemY + step);
+            break;
+        case 'ArrowLeft':
+            gameState.personagemX = Math.max(0, gameState.personagemX - step);
+            break;
+        case 'ArrowRight':
+            gameState.personagemX = Math.min(100, gameState.personagemX + step);
+            break;
+        default:
+            return; 
+    }
+    updatePersonagemPosition(); 
+}
+
+function updatePersonagemPosition() {
+    const personagem = document.getElementById('personagem-estudante');
+    if (personagem) {
+        personagem.style.left = `${gameState.personagemX}%`;
+        personagem.style.top = `${gameState.personagemY}%`;
+    }
+}
+
+
+// -------------------- RENDERIZAÇÃO DA TELA DE JOGO --------------------
+
+function renderGameScreen(){
+    const screen=document.createElement('div'); 
+    screen.className='w-full h-screen flex flex-col p-6'; 
+    screen.style.backgroundImage = `url('./imagens/capa2.jpg')`; 
+    screen.style.backgroundSize = 'cover';
+    screen.style.backgroundPosition = 'center'; 
+    screen.style.backgroundColor='rgba(0,0,0,0.2)'; 
+    const helice=heliceDetails[gameState.selectedHelice];
+    const objectiveData = [
+        'Entregar petição no Congresso Nacional, Brasília (DF) (Centro-Oeste)',
+        'Organizar assembleia estudantil na Universidade Federal, Belém (PA) (Norte)',
+        'Liderar marcha pacífica no centro da cidade, Recife (PE) (Nordeste)',
+        'Criar abaixo-assinado digital no IFSP, São Paulo (SP) (Sudeste)',
+        'Participar de debate juvenil na Universidade Federal, Porto Alegre (RS) (Sul)',
+    ];
+
+
+    // 1. HEADER: Logo e Indicadores
+    const headerHTML = `
+        <header class="flex justify-between items-center w-full mb-6">
+            <div class="flex items-end space-x-4">
+                <img src="./imagens/logopequena.png" alt="Poder nas Mãos Logo" class="${LOGO_ALTURA}"> 
+                
+                </div>
+
+            <div class="flex items-center space-x-6 text-sm">
+                <span class="text-white font-bold">Indicadores Base</span>
+                
+                <div class="flex items-center space-x-2 indicator-base-container">
+                    <span class="text-gray-800">Social</span>
+                    <div class="indicator-base-bg">
+                        <div class="indicator-bar-fill bg-[#4CAF50]" style="width:${gameState.popularidade}%;"></div>
+                    </div>
+                    <span class="font-bold text-gray-800">${gameState.popularidade}%</span>
+                </div>
+
+                <div class="flex items-center space-x-2 indicator-base-container">
+                    <span class="text-gray-800">Ética</span>
+                    <div class="indicator-base-bg">
+                        <div class="indicator-bar-fill bg-[#2196F3]" style="width:${gameState.etica}%;"></div>
+                    </div>
+                    <span class="font-bold text-gray-800">${gameState.etica}%</span>
+                </div>
+
+                <div class="flex items-center space-x-2 indicator-base-container">
+                    <span class="text-gray-800">Fundos</span>
+                    <div class="indicator-base-bg">
+                        <div class="indicator-bar-fill bg-[#FFEB3B]" style="width:${Math.min(100, gameState.fundos / 1000)}%;"></div>
+                    </div>
+                    <span class="font-bold text-gray-800">${Math.round(gameState.fundos / 1000)}k</span>
+                </div>
+            </div>
+        </header>
+    `;
+
+    // 2. MAIN CONTENT: Objetivos, Mapa e Celular
+    const mainContent = document.createElement('div');
+    mainContent.className = 'flex flex-1 w-full justify-center items-start space-x-8';
+
+    // Coluna 1: Objetivos e Celular
+    const leftColumnContent = `
+        <div class="w-full objectives-panel p-6 rounded-xl self-start">
+            <h2 class="text-3xl font-extrabold font-['Teko'] mb-4 text-[#e0f2f1] border-b-2 border-[#63a4b0] pb-2">OBJETIVOS</h2>
+            
+            <div class="mb-6">
+                <h3 class="text-xl font-bold mb-2 text-[#b2ebf2]">AGENDA OFICIAL (Deslocamento pelo Mapa)</h3>
+                <ul class="list-none space-y-2 text-sm">
+                    ${objectiveData.map((obj, index) => `
+                        <li class="flex items-center space-x-2 ${gameState.objectivesStatus.deslocamento[index] === 1 ? 'text-[#a5d6a7]' : 'text-[#e0f2f1] opacity-90'}">
+                            <span class="w-4 h-4 rounded-full border-2 ${gameState.objectivesStatus.deslocamento[index] === 1 ? 'bg-green-600 border-green-400' : 'border-gray-400'} flex-shrink-0"></span>
+                            <span>${obj}</span>
+                        </li>
+                    `).join('')}
+                </ul>
+            </div>
+
+            <div>
+                <h3 class="text-xl font-bold mb-2 text-[#b2ebf2]">ALIANÇAS (Mesa de Negociação)</h3>
+                <ul class="list-none space-y-2 text-sm">
+                    <li class="flex items-center space-x-2 ${gameState.objectivesStatus.negociacao[0] === 1 ? 'text-[#a5d6a7]' : 'text-[#e0f2f1] opacity-90'}">
+                         <span class="w-4 h-4 rounded-full border-2 ${gameState.objectivesStatus.negociacao[0] === 1 ? 'bg-green-600 border-green-400' : 'border-gray-400'} flex-shrink-0"></span>
+                         <span>Governo: Para conseguir votação, você cede 10 pontos de Popularidade ao mobilizar as ruas.</span>
+                    </li>
+                    <li class="flex items-center space-x-2 ${gameState.objectivesStatus.negociacao[1] === 1 ? 'text-[#a5d6a7]' : 'text-[#e0f2f1] opacity-90'}">
+                        <span class="w-4 h-4 rounded-full border-2 ${gameState.objectivesStatus.negociacao[1] === 1 ? 'bg-green-600 border-green-400' : 'border-gray-400'} flex-shrink-0"></span>
+                        <span>Mercado: Para atrair patrocínio, você perde 5 pontos de Fundos oferecendo visibilidade gratuita.</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="celular-img flex flex-col justify-end items-center" style="background: url('./imagens/celular.png') no-repeat center center / contain; height: ${CELULAR_ALTURA}; width: ${CELULAR_LARGURA};">
+            </div>
+    `;
+
+    const leftColumnDiv = document.createElement('div');
+    leftColumnDiv.className = 'w-1/4 flex flex-col items-center justify-start gap-6'; // Coluna que contém objetivos e celular
+    leftColumnDiv.innerHTML = leftColumnContent;
+    
+    // Coluna Central: Mapa e Projeto de Lei (texto da lei)
+    const mapCol = document.createElement('div');
+    mapCol.className = 'w-1/2 flex flex-col items-center justify-center';
+    
+    // 1. CORREÇÃO: Removendo o balão branco de "Lei de Suporte Escolar..."
+    // Deixamos apenas o título da lei no cabeçalho (que já está lá acima)
+    const projectLeiHTML = `
+        <div class="bg-white p-4 rounded-xl shadow-lg w-full mb-4">
+            <h4 class="text-lg font-bold text-gray-900">PROJETO DE LEI: ${helice.projeto_lei.titulo}</h4>
+            <p class="text-xs text-gray-600 italic mt-1">${helice.projeto_lei.descricao}</p>
+        </div>
+    `;
+
+    mapCol.innerHTML = projectLeiHTML + `
+        <div class="map-container flex items-center justify-center w-full relative">
+            <img src="./imagens/mapabrasil.png" alt="Mapa do Brasil" class="${MAPA_ALTURA} ${MAPA_LARGURA} object-contain">
+            
+            <img id="personagem-estudante" src="./imagens/estudante.png" alt="Personagem Estudante" 
+                 class="absolute ${PERSONAGEM_ALTURA} transform -translate-y-1/2 -translate-x-1/2" 
+                 style="left: ${gameState.personagemX}%; top: ${gameState.personagemY}%;">
+        </div>
+    `;
+    
+    // Coluna 3: Mantida vazia ou para outros elementos futuros
+    const rightColumnDiv = document.createElement('div');
+    rightColumnDiv.className = 'w-1/4 flex flex-col items-center justify-center relative'; // Coluna vazia
+
+    screen.innerHTML = headerHTML;
+    mainContent.appendChild(leftColumnDiv); // Adicionando a coluna da esquerda (objetivos + celular)
+    mainContent.appendChild(mapCol); // Adicionando a coluna central (mapa)
+    mainContent.appendChild(rightColumnDiv); // Adicionando a coluna da direita (vazia)
+    screen.appendChild(mainContent);
+
+    // Modal de Questão (Pop-up de interrupção)
+    const modal=document.createElement('div'); 
+    modal.id='questionModal'; 
+    modal.className='fixed inset-0 flex items-center justify-center bg-black bg-opacity-70 hidden z-50';
+    modal.innerHTML=`<div class="bg-gray-800 rounded-xl p-6 max-w-lg w-full text-center text-white shadow-2xl">
+        <h3 class="text-2xl font-bold mb-4 text-red-400">🚨 DILEMA INTERRUPTIVO! 🚨</h3>
+        <div id="timer-bar"><div id="timer-fill"></div></div>
+        <div id="questionText" class="mb-4 mt-4 font-semibold text-lg"></div>
+        <div id="options" class="flex flex-col gap-4"></div>
+        <button id="closeQuestion" class="mt-6 px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg font-bold">FECHAR (Aplicar Sanção)</button></div>`;
+    
+    screen.appendChild(modal);
+
+    return screen;
+}
+
+// Inicializa o jogo
+render();
+</script>
+</body>
+</html>
