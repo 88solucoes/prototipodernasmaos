@@ -10,15 +10,15 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Teko:wght@300..700&display=swap');
 
-body { font-family: 'Inter', sans-serif; margin:0; overflow:hidden; background-color: #0d47a1; }
+body { font-family: 'Inter', sans-serif; margin:0; overflow:auto; background-color: #ffffff; }
 .full-screen { width:100vw; height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; background-size:cover; background-position:center; transition:opacity 0.5s ease-in-out; position:absolute; top:0; left:0; }
-.game-background { background-image:url('capa.jpg'); background-repeat:no-repeat; background-size: cover; background-position: center; } 
+.game-background { background-image:url('./imagens/capa.jpg'); background-attachment: fixed; background-size: cover; background-position: center;  } 
 .selection-background { 
     background-color: rgba(0, 0, 0, 0.7); 
 } 
 
 .loading-content { display:flex; flex-direction:column; align-items:center; justify-content:center; padding:2rem; background-color:rgba(0,0,0,0.7); border-radius:12px; box-shadow:0 4px 10px rgba(0,0,0,0.5); max-width:90%; text-align:center; }
-.progress-bar { width:300px; height:15px; background-color:#374151; border-radius:9999px; margin-top:1rem; overflow:hidden; }
+.progress-bar { width:300px; height:15px; background-color:#374151; border-radius:9999px; margin-top:1rem; overflow:auto; }
 .progress-fill { height:100%; background-color:#10b981; transition:width 3s ease-out; border-radius:9999px; }
 .helice-card { background-color: rgba(255,255,255,0.9); border:3px solid transparent; cursor:pointer; transition: all 0.3s ease; height:100%; }
 .helice-card:hover { transform: translateY(-5px); box-shadow: 0 10px 15px rgba(0,0,0,0.2); }
@@ -34,7 +34,7 @@ body { font-family: 'Inter', sans-serif; margin:0; overflow:hidden; background-c
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
 }
 .map-container {
-    background-image: url('mar.gif'); 
+    background-image: url('./imagens/mar.gif'); 
     background-size: cover; /* Garante que o GIF cubra toda a área do container, ajustando-se */
     background-position: center; /* Centraliza o GIF */
     background-repeat: no-repeat; /* Impede a repetição do GIF */ 
@@ -58,15 +58,17 @@ body { font-family: 'Inter', sans-serif; margin:0; overflow:hidden; background-c
     border-radius: 9999px;
     width: 100%; 
 }
+
 /* Estilo para o contêiner do celular na nova posição */
 .phone-and-objectives {
     display: flex;
     flex-direction: column;
     gap: 20px; /* Espaçamento entre o painel de objetivos e o celular */
-    align-items: center; /* Centraliza o celular e o painel horizontalmente */
+    align-items: right; /* Centraliza o celular e o painel horizontalmente */
     width: 1/4; /* Ocupa a mesma largura da coluna de objetivos */
     align-self: flex-start; /* Alinha no topo */
 }
+
 </style>
 </head>
 <body class="font-sans text-white">
@@ -157,9 +159,9 @@ selectedHelice: 'Academia',
 personagem: null,
 projetoLei: null,
 habilidade: null,
-popularidade: 25, 
-etica: 25,
-fundos: 10000, 
+popularidade: 50, 
+etica: 50,
+fundos: 50000, 
 currentDecision: 0,
 objectivesStatus: {
     deslocamento: [0, 0, 0, 0, 0],
@@ -349,12 +351,20 @@ function updatePersonagemPosition() {
 // -------------------- RENDERIZAÇÃO DA TELA DE JOGO --------------------
 
 function renderGameScreen(){
-    const screen=document.createElement('div'); 
-    screen.className='w-full h-screen flex flex-col p-6'; 
-    screen.style.backgroundImage = `url('capa2.jpg')`; 
+    const screen = document.createElement('div'); 
+    screen.className = 'fixed inset-0 w-full h-full overflow-auto flex flex-col p-6 z-0';
+
+    // Somente a imagem fixa, sem overlay ou cor branca
+    screen.style.backgroundImage = "url('./imagens/capa2.jpg')";
     screen.style.backgroundSize = 'cover';
-    screen.style.backgroundPosition = 'center'; 
-    screen.style.backgroundColor='rgba(0,0,0,0.2)'; 
+    screen.style.backgroundPosition = 'center';
+    screen.style.backgroundRepeat = 'no-repeat';
+    screen.style.backgroundAttachment = 'fixed';
+
+    // Remove qualquer resquício de cor
+    screen.style.backgroundColor = 'transparent';
+    screen.style.color = '#fff';
+
     const helice=heliceDetails[gameState.selectedHelice];
     const objectiveData = [
         'Entregar petição no Congresso Nacional, Brasília (DF) (Centro-Oeste)',
@@ -369,7 +379,7 @@ function renderGameScreen(){
     const headerHTML = `
         <header class="flex justify-between items-center w-full mb-6">
             <div class="flex items-end space-x-4">
-                <img src="logopequena.png" alt="Poder nas Mãos Logo" class="${LOGO_ALTURA}"> 
+                <img src="./imagens/logopequena.png" alt="Poder nas Mãos Logo" class="${LOGO_ALTURA}"> 
                 
                 </div>
 
@@ -439,7 +449,7 @@ function renderGameScreen(){
             </div>
         </div>
 
-        <div class="celular-img flex flex-col justify-end items-center" style="background: url('celular.png') no-repeat center center / contain; height: ${CELULAR_ALTURA}; width: ${CELULAR_LARGURA};">
+        <div class="celular-img flex flex-col justify-end items-center" style="background: url('./imagens/celular.png') no-repeat center center / contain; height: ${CELULAR_ALTURA}; width: ${CELULAR_LARGURA};">
             </div>
     `;
 
@@ -462,9 +472,9 @@ function renderGameScreen(){
 
     mapCol.innerHTML = projectLeiHTML + `
         <div class="map-container flex items-center justify-center w-full relative">
-            <img src="mapabrasil.png" alt="Mapa do Brasil" class="${MAPA_ALTURA} ${MAPA_LARGURA} object-contain">
+            <img src="./imagens/mapabrasil.png" alt="Mapa do Brasil" class="${MAPA_ALTURA} ${MAPA_LARGURA} object-contain">
             
-            <img id="personagem-estudante" src="estudante.png" alt="Personagem Estudante" 
+            <img id="personagem-estudante" src="./imagens/estudante.png" alt="Personagem Estudante" 
                  class="absolute ${PERSONAGEM_ALTURA} transform -translate-y-1/2 -translate-x-1/2" 
                  style="left: ${gameState.personagemX}%; top: ${gameState.personagemY}%;">
         </div>
@@ -500,5 +510,4 @@ function renderGameScreen(){
 render();
 </script>
 </body>
-
 </html>
