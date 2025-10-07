@@ -12,7 +12,7 @@
 
 body { font-family: 'Inter', sans-serif; margin:0; overflow:auto; background-color: #ffffff; }
 .full-screen { width:100vw; height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; background-size:cover; background-position:center; transition:opacity 0.5s ease-in-out; position:absolute; top:0; left:0; }
-.game-background { background-image:url('./imagens/capa.jpg'); background-attachment: fixed; background-size: cover; background-position: center;  } 
+.game-background { background-image:url('capa.jpg'); background-attachment: fixed; background-size: cover; background-position: center;  } 
 .selection-background { 
     background-color: rgba(0, 0, 0, 0.7); 
 } 
@@ -34,7 +34,7 @@ body { font-family: 'Inter', sans-serif; margin:0; overflow:auto; background-col
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
 }
 .map-container {
-    background-image: url('./imagens/mar.gif'); 
+    background-image: url('mar.gif'); 
     background-size: cover; /* Garante que o GIF cubra toda a área do container, ajustando-se */
     background-position: center; /* Centraliza o GIF */
     background-repeat: no-repeat; /* Impede a repetição do GIF */ 
@@ -355,7 +355,7 @@ function renderGameScreen(){
     screen.className = 'fixed inset-0 w-full h-full overflow-auto flex flex-col p-6 z-0';
 
     // Somente a imagem fixa, sem overlay ou cor branca
-    screen.style.backgroundImage = "url('./imagens/capa2.jpg')";
+    screen.style.backgroundImage = "url('capa2.jpg')";
     screen.style.backgroundSize = 'cover';
     screen.style.backgroundPosition = 'center';
     screen.style.backgroundRepeat = 'no-repeat';
@@ -379,7 +379,7 @@ function renderGameScreen(){
     const headerHTML = `
         <header class="flex justify-between items-center w-full mb-6">
             <div class="flex items-end space-x-4">
-                <img src="./imagens/logopequena.png" alt="Poder nas Mãos Logo" class="${LOGO_ALTURA}"> 
+                <img src="logopequena.png" alt="Poder nas Mãos Logo" class="${LOGO_ALTURA}"> 
                 
                 </div>
 
@@ -472,9 +472,9 @@ function renderGameScreen(){
 
     mapCol.innerHTML = projectLeiHTML + `
         <div class="map-container flex items-center justify-center w-full relative">
-            <img src="./imagens/mapabrasil.png" alt="Mapa do Brasil" class="${MAPA_ALTURA} ${MAPA_LARGURA} object-contain">
+            <img src="mapabrasil.png" alt="Mapa do Brasil" class="${MAPA_ALTURA} ${MAPA_LARGURA} object-contain">
             
-            <img id="personagem-estudante" src="./imagens/estudante.png" alt="Personagem Estudante" 
+            <img id="personagem-estudante" src="estudante.png" alt="Personagem Estudante" 
                  class="absolute ${PERSONAGEM_ALTURA} transform -translate-y-1/2 -translate-x-1/2" 
                  style="left: ${gameState.personagemX}%; top: ${gameState.personagemY}%;">
         </div>
@@ -511,3 +511,4 @@ render();
 </script>
 </body>
 </html>
+
